@@ -139,16 +139,32 @@
     render();
   }
 
-  function openInBrowser(app) {
-    const win = window.open(app.url, '_blank', 'noopener');
-    if (!win) location.href = app.url; // pop-up blocked (some in-app browsers): open it here instead
+  /**
+   * Open the app outside AppsGo. `ownWindow` (the player's maximize button) asks for a separate window
+   * on computers; phones open a new tab either way.
+   * (No 'noopener' in the features: with it window.open() always returns null, so a blocked pop-up
+   * can't be told apart. The opener link is cut by hand instead.)
+   */
+  function openInBrowser(app, { ownWindow = false } = {}) {
+    const features = ownWindow
+      ? `popup,width=${Math.min(screen.availWidth, 1280)},height=${Math.min(screen.availHeight, 900)}`
+      : '';
+    const win = window.open(app.url, '_blank', features);
+    if (win) win.opener = null;
+    else location.href = app.url; // pop-up blocked (some in-app browsers): open it here instead
   }
 
-  // ---------- player: runs an app inside AppsGo ----------
+  // ---------- player: runs apps inside AppsGo ----------
+  //
+  // EXPERIMENTAL multitasking: ⌄ minimizes an app and keeps it running; the "Running" dock above the
+  // tabs (and ⧉ in the player bar) switch between running apps; ✕ closes one.
+  // Set MULTITASK = false to go back to one app at a time, closed when you leave it.
+  const MULTITASK = true;
+  const MAX_RUNNING = 4; // opening a 5th closes the one used longest ago
 
-  let playerApp = null;
-  let playerPushed = false; // we added #/play/<id> to history, so Back closes the player
-  let playerSlowTimer;
+  const sessions = new Map(); // id → { app, frame, loaded, slow, slowTimer, at }
+  let activeId = null;
+  let playerPushed = false; // we added #/play/<id> to history, so Back leaves the player
   const themeMeta = document.querySelector('meta[name="theme-color"]');
   const themeDefault = themeMeta.content;
 
@@ -156,11 +172,14 @@
     const app = byId.get(id);
     if (!app) return;
     const player = $('player');
-    if (playerApp?.id === id && player.open) return;
+    if (activeId === id && player.open) return;
 
-    // Opened from the details sheet: swap its #/app/<id> entry for #/play/<id>, so Back from the
-    // player goes to where the sheet was opened from, not back into the sheet.
-    if (push) {
+    if (player.open) {
+      // Switching apps inside the player: same history entry, new id.
+      history.replaceState(null, '', `#/play/${encodeURIComponent(id)}`);
+    } else if (push) {
+      // From the details sheet: swap its #/app/<id> entry for #/play/<id>, so Back from the
+      // player goes to where the sheet was opened from, not back into the sheet.
       if (location.hash.startsWith('#/app/')) {
         history.replaceState(null, '', `#/play/${encodeURIComponent(id)}`);
         playerPushed = sheetPushed;
@@ -171,56 +190,146 @@
       }
     }
     if ($('app-sheet').open) closeSheet($('app-sheet'));
+    if ($('switch-sheet').open) closeSheet($('switch-sheet'));
 
-    playerApp = app;
+    if (!MULTITASK) for (const other of [...sessions.keys()]) if (other !== id) endSession(other);
+    if (!sessions.has(id)) {
+      if (sessions.size >= MAX_RUNNING) {
+        const oldest = [...sessions.values()].sort((x, y) => x.at - y.at)[0];
+        endSession(oldest.app.id);
+        toast(`Closed ${oldest.app.name} to make room`);
+      }
+      startSession(app);
+    }
+    showSession(id);
+    if (!player.open) player.showModal();
+    document.documentElement.classList.add('playing'); // no page scroll behind the player
+    renderDock();
+  }
+
+  function startSession(app) {
+    const frame = document.createElement('iframe');
+    frame.className = 'pl-frame';
+    frame.title = app.name;
+    frame.allow = 'fullscreen; autoplay; clipboard-read; clipboard-write; web-share; gamepad; screen-wake-lock; accelerometer; gyroscope';
+    frame.allowFullscreen = true;
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.hidden = true;
+    const sess = { app, frame, loaded: false, slow: false, slowTimer: 0, at: Date.now() };
+    frame.addEventListener('load', () => {
+      clearTimeout(sess.slowTimer);
+      sess.loaded = true;
+      if (activeId === app.id) renderLoading();
+    });
+    sessions.set(app.id, sess);
+    $('pl-stage').append(frame); // never moved afterwards: moving an iframe reloads it
+    loadSession(sess);
+  }
+
+  function loadSession(sess) {
+    sess.loaded = false;
+    sess.slow = false;
+    clearTimeout(sess.slowTimer);
+    // e.g. a site that refuses to be framed never finishes loading
+    sess.slowTimer = setTimeout(() => {
+      sess.slow = true;
+      if (activeId === sess.app.id) renderLoading();
+    }, 8000);
+    sess.frame.src = sess.app.url;
+    if (activeId === sess.app.id) renderLoading();
+  }
+
+  function renderLoading() {
+    const sess = sessions.get(activeId);
+    $('pl-loading').hidden = !sess || sess.loaded;
+    $('pl-slow').hidden = !sess?.slow;
+  }
+
+  /** Bring a running app to the front; the others stay loaded but hidden. */
+  function showSession(id) {
+    const sess = sessions.get(id);
+    activeId = id;
+    sess.at = Date.now();
+    for (const [sid, s] of sessions) s.frame.hidden = sid !== id;
+    const app = sess.app;
     $('pl-icon').innerHTML = iconHTML(app, 'sm');
     $('pl-name').textContent = app.name;
     $('pl-host').textContent = new URL(app.url).host;
     $('player').style.setProperty('--c1', app.colors[0]);
     $('player').style.setProperty('--c2', app.colors[1]);
     themeMeta.content = app.colors[0];
-    loadFrame();
-    if (!player.open) player.showModal();
-    document.documentElement.classList.add('playing'); // no page scroll behind the player
+    $('pl-min').hidden = !MULTITASK;
+    $('pl-switch').hidden = !MULTITASK;
+    $('pl-switch').setAttribute('aria-label', `${sessions.size} running ${sessions.size === 1 ? 'app' : 'apps'}: switch`);
+    $('pl-switch-count').textContent = sessions.size;
+    renderLoading();
   }
 
-  function loadFrame() {
-    const old = $('pl-frame');
-    if (old) old.remove();
-    const frame = document.createElement('iframe');
-    frame.id = 'pl-frame';
-    frame.className = 'pl-frame';
-    frame.title = playerApp.name;
-    frame.allow = 'fullscreen; autoplay; clipboard-read; clipboard-write; web-share; gamepad; screen-wake-lock; accelerometer; gyroscope';
-    frame.allowFullscreen = true;
-    frame.referrerPolicy = 'strict-origin-when-cross-origin';
-    $('pl-loading').hidden = false;
-    $('pl-slow').hidden = true;
-    clearTimeout(playerSlowTimer);
-    playerSlowTimer = setTimeout(() => ($('pl-slow').hidden = false), 8000); // e.g. a site that refuses to be framed
-    frame.addEventListener('load', () => {
-      clearTimeout(playerSlowTimer);
-      $('pl-loading').hidden = true;
-    });
-    frame.src = playerApp.url;
-    $('pl-stage').append(frame);
+  /** Stop one app for good (its sounds, timers…). */
+  function endSession(id) {
+    const sess = sessions.get(id);
+    if (!sess) return;
+    clearTimeout(sess.slowTimer);
+    sess.frame.remove();
+    sessions.delete(id);
   }
 
-  /** Close the player and stop the app (its sounds, timers…). */
-  function closePlayer({ fromRoute = false } = {}) {
+  /** Leave the player. With MULTITASK the apps keep running (minimized); without, they're closed. */
+  function hidePlayer({ fromRoute = false } = {}) {
     const player = $('player');
     if (!player.open) return;
-    clearTimeout(playerSlowTimer);
-    $('pl-frame')?.remove();
+    if ($('switch-sheet').open) $('switch-sheet').close();
     player.close();
     document.documentElement.classList.remove('playing');
     themeMeta.content = themeDefault;
-    playerApp = null;
+    if (!MULTITASK) endSession(activeId);
+    else if (activeId) sessions.get(activeId).frame.hidden = true;
+    activeId = null;
     if (!fromRoute && location.hash.startsWith('#/play/')) {
       if (playerPushed) history.back();
       else history.replaceState(null, '', `#/${state.route === 'home' ? '' : state.route}`);
     }
     playerPushed = false;
+    renderDock();
+  }
+
+  /** ✕ in the player: close the app you're looking at. */
+  function closeActive() {
+    const id = activeId;
+    hidePlayer();
+    endSession(id);
+    renderDock();
+  }
+
+  // The "Running" dock above the tabs: tap an app to go back to it.
+  function renderDock() {
+    const show = MULTITASK && sessions.size > 0 && !$('player').open;
+    $('dock').hidden = !show;
+    document.body.classList.toggle('has-dock', show);
+    if (!show) return;
+    const list = [...sessions.values()].sort((x, y) => y.at - x.at);
+    $('dock-apps').innerHTML = list
+      .map((s) => `<button class="dock-app" type="button" data-resume="${esc(s.app.id)}" title="Back to ${esc(s.app.name)}" aria-label="Back to ${esc(s.app.name)}">${iconHTML(s.app, 'sm')}</button>`)
+      .join('');
+    $('dock-label').textContent = `${sessions.size} running`;
+  }
+
+  // ⧉ in the player bar: the running apps, to switch to or close.
+  function openSwitcher() {
+    const list = [...sessions.values()].sort((x, y) => y.at - x.at);
+    $('sw-list').innerHTML = list
+      .map((s) => {
+        const on = s.app.id === activeId;
+        return `<li class="sw-row ${on ? 'is-on' : ''}">
+          <button class="sw-main" type="button" data-sw-open="${esc(s.app.id)}">
+            ${iconHTML(s.app, 'lg')}
+            <span class="sw-text"><strong>${esc(s.app.name)}</strong><span class="muted small">${on ? 'Showing now' : 'Tap to switch'}</span></span>
+          </button>
+          <button class="sw-close" type="button" data-sw-close="${esc(s.app.id)}" aria-label="Close ${esc(s.app.name)}" title="Close">✕</button>
+        </li>`;
+      })
+      .join('');
+    openSheet($('switch-sheet'));
   }
 
   // ---------- helpers ----------
@@ -718,7 +827,7 @@
       openPlayer(id, { push: false });
       return;
     }
-    if ($('player').open) closePlayer({ fromRoute: true }); // Back button while an app is open
+    if ($('player').open) hidePlayer({ fromRoute: true }); // Back button while an app is open: minimize it
     if (r === 'app') {
       const id = decodeURIComponent(rawId || '');
       if (!byId.has(id)) return void history.replaceState(null, '', '#/');
@@ -865,15 +974,45 @@
     // Player
     $('player').addEventListener('cancel', (e) => {
       e.preventDefault(); // Esc
-      closePlayer();
+      hidePlayer();
     });
-    $('pl-close').addEventListener('click', () => closePlayer());
-    $('pl-reload').addEventListener('click', () => playerApp && loadFrame());
+    $('pl-min').addEventListener('click', () => hidePlayer());
+    $('pl-close').addEventListener('click', closeActive);
+    $('pl-reload').addEventListener('click', () => activeId && loadSession(sessions.get(activeId)));
     $('pl-browser').addEventListener('click', () => {
-      if (!playerApp) return;
-      const app = playerApp;
-      closePlayer();
-      openInBrowser(app);
+      if (!activeId) return;
+      const app = sessions.get(activeId).app;
+      openInBrowser(app, { ownWindow: true }); // first, while the tap still counts as a user action
+      closeActive();
+    });
+    $('pl-switch').addEventListener('click', openSwitcher);
+    wireSheet($('switch-sheet'));
+    $('sw-list').addEventListener('click', (e) => {
+      const open = e.target.closest('[data-sw-open]');
+      const close = e.target.closest('[data-sw-close]');
+      if (open) openPlayer(open.dataset.swOpen);
+      else if (close) {
+        const id = close.dataset.swClose;
+        if (id === activeId) {
+          closeSheet($('switch-sheet'));
+          closeActive();
+        } else {
+          endSession(id);
+          showSession(activeId); // updates the ⧉ count
+          if (sessions.size < 2) closeSheet($('switch-sheet'));
+          else openSwitcher();
+        }
+      }
+    });
+    $('sw-home').addEventListener('click', () => hidePlayer());
+    $('dock').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-resume]');
+      if (b) openPlayer(b.dataset.resume);
+    });
+    $('dock-close').addEventListener('click', () => {
+      for (const id of [...sessions.keys()]) endSession(id);
+      renderDock();
+      toast('Closed all apps');
     });
     $('as-fav').addEventListener('click', () => {
       if (!sheetApp) return;

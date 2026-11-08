@@ -11,7 +11,7 @@
   --on-primary: #ffffff;
   --accent-title: #115e59;
   --heart: #ef4444;
-  --hero: linear-gradient(180deg, #0f766e 0%, #0d9488 55%, #14b8a6 100%);
+  --hero: linear-gradient(180deg, #14b8a6 0%, #0d9488 55%, #0f766e 100%);
   --gradient: linear-gradient(90deg, #0891b2, #0d9488);
   --divider: linear-gradient(90deg, #99f6e4, #a5f3fc, #bae6fd);
   --promo-bg: #ecfeff;
@@ -43,7 +43,7 @@
       --on-primary: #ffffff;
       --accent-title: #5eead4;
       --heart: #f87171;
-      --hero: linear-gradient(180deg, #0f766e 0%, #0d9488 55%, #14b8a6 100%); /* same as light */
+      --hero: linear-gradient(180deg, #14b8a6 0%, #0d9488 55%, #0f766e 100%); /* same as light */
       --gradient: linear-gradient(90deg, #0891b2, #0d9488);
       --divider: linear-gradient(90deg, #115e59, #0f766e, #0e7490);
       --promo-bg: #0b2a2c;
@@ -72,7 +72,7 @@
   --on-primary: #ffffff;
   --accent-title: #5eead4;
   --heart: #f87171;
-  --hero: linear-gradient(180deg, #0f766e 0%, #0d9488 55%, #14b8a6 100%); /* same as light */
+  --hero: linear-gradient(180deg, #14b8a6 0%, #0d9488 55%, #0f766e 100%); /* same as light */
   --gradient: linear-gradient(90deg, #0891b2, #0d9488);
   --divider: linear-gradient(90deg, #115e59, #0f766e, #0e7490);
   --promo-bg: #0b2a2c;
@@ -121,6 +121,7 @@ input, select, textarea { font: inherit; color: inherit; }
 .hero {
   background: var(--hero);
   color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.18);
   padding-top: env(safe-area-inset-top);
   box-shadow: 0 2px 10px var(--glow);
 }
@@ -493,9 +494,7 @@ html.playing, html.playing body { overflow: hidden; }
 .pl-bar {
   flex-shrink: 0; display: flex; align-items: center; gap: 8px;
   padding: calc(env(safe-area-inset-top) + 6px) 8px 6px; color: #fff;
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgb(255 255 255 / 0.18), transparent 60%),
-    linear-gradient(135deg, var(--c1, #0f766e), var(--c2, #0891b2));
+  background: linear-gradient(180deg, var(--c1, #14b8a6), var(--c2, #0f766e));
   box-shadow: 0 2px 10px rgb(0 0 0 / 0.18);
 }
 .pl-btn {
@@ -519,3 +518,74 @@ html.playing, html.playing body { overflow: hidden; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .pl-slow { max-width: 280px; font-size: 0.85rem; font-weight: 500; line-height: 1.5; }
+
+/* ---------- EXPERIMENTAL multitasking: switcher + running dock ---------- */
+/* Left: running-apps count */
+.pl-running {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 11px 0 9px; border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.35); background: rgb(255 255 255 / 0.18); color: #fff; backdrop-filter: blur(4px);
+}
+.pl-running:hover { background: rgb(255 255 255 / 0.28); }
+.pl-running:active { transform: scale(0.95); }
+.pl-count { font-size: 0.9rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+/* Right: window buttons, grouped */
+.pl-actions {
+  flex-shrink: 0; display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 999px;
+  background: rgb(0 0 0 / 0.14);
+}
+.pl-actions .pl-btn { width: 34px; height: 34px; border: 0; background: transparent; backdrop-filter: none; }
+.pl-actions .pl-btn:hover { background: rgb(255 255 255 / 0.2); }
+.pl-actions .pl-btn-close:hover { background: #ef4444; }
+@media (max-width: 420px) {
+  .pl-bar { gap: 6px; padding-left: 6px; padding-right: 6px; }
+  .pl-host { display: none; }
+  .pl-actions .pl-btn { width: 32px; height: 32px; }
+}
+@media (max-width: 350px) { .pl-bar #pl-icon { display: none; } }
+
+/* Switcher sheet */
+#switch-sheet h3 { margin: 0 0 12px; }
+.sw-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.sw-row { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 10px; border: 1px solid var(--border); border-radius: 16px; background: var(--bg); }
+.sw-row.is-on { border-color: var(--primary); background: var(--primary-soft); }
+.sw-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; border: 0; background: none; padding: 0; text-align: left; color: var(--text); }
+.sw-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sw-text strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sw-close {
+  width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--surface); color: var(--muted); display: grid; place-items: center; padding: 0;
+}
+.sw-close:hover { border-color: var(--error); color: var(--error); }
+
+/* Running dock: a pill floating just above the bottom tabs */
+.dock {
+  position: fixed; z-index: 11; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + 72px);
+  display: flex; align-items: center; gap: 8px; max-width: calc(100% - 24px);
+  padding: 6px 6px 6px 14px; border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(12px);
+  border: 1px solid var(--border); box-shadow: 0 8px 24px rgb(0 0 0 / 0.16), 0 0 0 3px var(--ring);
+  animation: dock-in 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes dock-in { from { transform: translate(-50%, 16px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dock { animation: none; } }
+.dock-label { font-size: 0.72rem; font-weight: 800; color: var(--primary); white-space: nowrap; }
+.dock-label::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgb(34 197 94 / 0.2); vertical-align: 1px; }
+.dock-apps { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.dock-apps::-webkit-scrollbar { display: none; }
+.dock-app { border: 0; background: none; padding: 0; border-radius: 10px; flex-shrink: 0; }
+.dock-app .app-icon.sm { box-shadow: 0 2px 6px rgb(0 0 0 / 0.18); }
+.dock-app:active .app-icon { transform: scale(0.92); }
+.dock-close {
+  width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; border: 0; padding: 0;
+  background: var(--bg); color: var(--muted); display: grid; place-items: center; font-size: 0.8rem;
+}
+.dock-close:hover { color: var(--error); }
+/* room under the page for the dock */
+body.has-dock .footer { padding-bottom: calc(env(safe-area-inset-bottom) + 136px); }
+body.has-dock .toast { bottom: calc(env(safe-area-inset-bottom) + 130px); }
+@media (min-width: 768px) {
+  .dock { bottom: 24px; }
+  body.has-dock .footer { padding-bottom: 96px; }
+  body.has-dock .toast { bottom: 90px; }
+}
