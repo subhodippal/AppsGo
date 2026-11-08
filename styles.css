@@ -544,7 +544,8 @@ html.playing, html.playing body { overflow: hidden; }
 @media (max-width: 350px) { .pl-bar #pl-icon { display: none; } }
 
 /* Switcher sheet */
-#switch-sheet h3 { margin: 0 0 12px; }
+#switch-sheet h3 { margin: 0 0 4px; }
+.sw-note { margin: 0 0 12px; }
 .sw-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .sw-row { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 10px; border: 1px solid var(--border); border-radius: 16px; background: var(--bg); }
 .sw-row.is-on { border-color: var(--primary); background: var(--primary-soft); }
@@ -589,3 +590,25 @@ body.has-dock .toast { bottom: calc(env(safe-area-inset-bottom) + 130px); }
   body.has-dock .footer { padding-bottom: 96px; }
   body.has-dock .toast { bottom: 90px; }
 }
+
+/* Running limit sheet */
+.app-icon.md { --size: 44px; }
+.lim-title { margin: 0 0 10px; text-align: center; font-size: 1.1rem; }
+.lim-note {
+  display: flex; align-items: flex-start; gap: 10px; margin: 0 0 14px; padding: 10px 12px; border-radius: 12px;
+  background: var(--promo-bg); color: var(--promo-text); font-size: 0.84rem; line-height: 1.45;
+}
+.dialog p.lim-note { margin: 0 0 14px; }
+.lim-note-icon { flex-shrink: 0; line-height: 1.45; }
+.lim-list { gap: 6px; }
+.lim-list .sw-row { padding: 6px 6px 6px 8px; border-radius: 14px; }
+.lim-list .sw-main { gap: 10px; }
+.lim-close {
+  flex-shrink: 0; white-space: nowrap; border: 1px solid color-mix(in srgb, var(--error) 40%, var(--border)); border-radius: 999px;
+  min-height: 32px; padding: 4px 12px; background: var(--error-bg); color: var(--error); font-weight: 800; font-size: 0.78rem;
+}
+.lim-close:hover { background: #dc2626; border-color: #dc2626; color: #fff; }
+.lim-close:active { transform: scale(0.95); }
+.lim-cancel { border-color: var(--error); color: var(--error); }
+.lim-cancel:hover { background: var(--error-bg); }
+.dialog p.lim-cancel-note { margin: 6px 0 0; text-align: center; font-size: 0.78rem; color: var(--muted); }

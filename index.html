@@ -30,7 +30,6 @@
 
         <a href="#/" class="hero-brand">
           <span class="hero-title"><span aria-hidden="true">🧩</span> AppsGo</span>
-          <span class="hero-subtitle">All my apps &amp; games, one tap away</span>
           <span id="status" class="status" hidden></span>
         </a>
 
@@ -167,8 +166,22 @@
     <dialog id="switch-sheet" class="dialog sheet" aria-labelledby="sw-title">
       <div class="sheet-handle" aria-hidden="true"></div>
       <h3 id="sw-title">Running apps</h3>
+      <p id="sw-note" class="muted small sw-note"></p>
       <ul id="sw-list" class="sw-list"></ul>
       <button id="sw-home" class="btn btn-ghost sheet-full" type="button">🏠 Back to AppsGo</button>
+    </dialog>
+
+    <!-- Running limit reached: pick an app to close, or don't open the new one. -->
+    <dialog id="limit-sheet" class="dialog sheet" aria-labelledby="lim-title">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <h3 id="lim-title" class="lim-title"></h3>
+      <p class="lim-note">
+        <span class="lim-note-icon" aria-hidden="true">ℹ️</span>
+        <span>Up to <b class="max-running"></b> apps can run at the same time. Close one to open <b id="lim-new"></b>.</span>
+      </p>
+      <ul id="lim-list" class="sw-list lim-list"></ul>
+      <button id="lim-keep" class="btn btn-ghost sheet-full lim-cancel" type="button" data-close="cancel">Cancel</button>
+      <p id="lim-keep-note" class="lim-cancel-note"></p>
     </dialog>
 
     <!-- Share one app: the AppsGo link (#/app/<id>) is copied as soon as this opens. -->

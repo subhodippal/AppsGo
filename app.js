@@ -126,9 +126,11 @@
     return on;
   }
 
-  function launch(id) {
+  async function launch(id) {
     const app = byId.get(id);
     if (!app) return;
+    // Running limit reached: ask which app to close first (or don't open this one).
+    if (app.open !== 'browser' && !(await ensureRoom(app))) return;
     state.recent = [{ id, at: Date.now() }, ...state.recent.filter((r) => r.id !== id)].slice(0, RECENT_MAX);
     state.opens[id] = (state.opens[id] || 0) + 1;
     store.set('recent', state.recent);
@@ -160,7 +162,7 @@
   // tabs (and ⧉ in the player bar) switch between running apps; ✕ closes one.
   // Set MULTITASK = false to go back to one app at a time, closed when you leave it.
   const MULTITASK = true;
-  const MAX_RUNNING = 4; // opening a 5th closes the one used longest ago
+  const MAX_RUNNING = 4; // opening a 5th asks which running app to close (ensureRoom)
 
   const sessions = new Map(); // id → { app, frame, loaded, slow, slowTimer, at }
   let activeId = null;
@@ -193,18 +195,60 @@
     if ($('switch-sheet').open) closeSheet($('switch-sheet'));
 
     if (!MULTITASK) for (const other of [...sessions.keys()]) if (other !== id) endSession(other);
-    if (!sessions.has(id)) {
-      if (sessions.size >= MAX_RUNNING) {
-        const oldest = [...sessions.values()].sort((x, y) => x.at - y.at)[0];
-        endSession(oldest.app.id);
-        toast(`Closed ${oldest.app.name} to make room`);
-      }
-      startSession(app);
-    }
+    if (!sessions.has(id)) startSession(app); // callers made room first (ensureRoom)
     showSession(id);
     if (!player.open) player.showModal();
     document.documentElement.classList.add('playing'); // no page scroll behind the player
     renderDock();
+  }
+
+  const needsRoom = (id) => MULTITASK && !sessions.has(id) && sessions.size >= MAX_RUNNING;
+
+  /**
+   * At the running limit: ask the user which app to close to make room for `app`.
+   * Resolves true when there is room (nothing to ask, or they closed one), false when they kept them all.
+   */
+  function ensureRoom(app) {
+    if (!needsRoom(app.id)) return Promise.resolve(true);
+    const sheet = $('limit-sheet');
+    const list = [...sessions.values()].sort((x, y) => y.at - x.at); // most recently used first
+    const oldestId = list[list.length - 1].app.id;
+    $('lim-title').textContent = `${sessions.size} apps are already running`;
+    $('lim-new').textContent = app.name;
+    $('lim-keep-note').textContent = `Don't open ${app.name}`;
+    $('lim-list').innerHTML = list
+      .map((s) => `<li class="sw-row">
+          <span class="sw-main">
+            ${iconHTML(s.app, 'md')}
+            <span class="sw-text"><strong>${esc(s.app.name)}</strong><span class="muted small">${s.app.id === oldestId ? 'Used longest ago' : s.app.id === activeId ? 'Showing now' : 'Minimized'}</span></span>
+          </span>
+          <button class="lim-close" type="button" data-lim-close="${esc(s.app.id)}" aria-label="Close ${esc(s.app.name)}">✕ Close</button>
+        </li>`)
+      .join('');
+    let chosen = null;
+    const onPick = (e) => {
+      const b = e.target.closest('[data-lim-close]');
+      if (!b) return;
+      chosen = b.dataset.limClose;
+      closeSheet(sheet);
+    };
+    $('lim-list').addEventListener('click', onPick);
+    openSheet(sheet);
+    return new Promise((resolve) =>
+      sheet.addEventListener('close', () => {
+        $('lim-list').removeEventListener('click', onPick);
+        if (!chosen) return resolve(false);
+        const name = sessions.get(chosen)?.app.name;
+        if (chosen === activeId) {
+          // closing the app on screen: leave the player without touching history (the new app replaces it)
+          activeId = null;
+        }
+        endSession(chosen);
+        renderDock();
+        toast(`Closed ${name}`);
+        resolve(true);
+      }, { once: true }),
+    );
   }
 
   function startSession(app) {
@@ -329,6 +373,7 @@
         </li>`;
       })
       .join('');
+    $('sw-note').textContent = `${sessions.size} of ${MAX_RUNNING} running · up to ${MAX_RUNNING} apps can run at the same time`;
     openSheet($('switch-sheet'));
   }
 
@@ -824,6 +869,15 @@
       const id = decodeURIComponent(rawId || '');
       if (!byId.has(id)) return void history.replaceState(null, '', '#/');
       render();
+      if (needsRoom(id)) {
+        // e.g. a pasted #/play/<id> link while the running limit is reached
+        if ($('player').open) hidePlayer({ fromRoute: true });
+        ensureRoom(byId.get(id)).then((ok) => {
+          if (ok) openPlayer(id, { push: false });
+          else history.replaceState(null, '', `#/${state.route === 'home' ? '' : state.route}`);
+        });
+        return;
+      }
       openPlayer(id, { push: false });
       return;
     }
@@ -893,6 +947,7 @@
   }
 
   function start() {
+    for (const el of document.querySelectorAll('.max-running')) el.textContent = MAX_RUNNING;
     renderThemeButton();
     renderStatus();
     renderInstall();
@@ -957,6 +1012,7 @@
     wireSheet($('confirm-sheet'));
     wireSheet($('install-dialog'));
     wireSheet($('share-sheet'));
+    wireSheet($('limit-sheet'));
     $('sh-copy').addEventListener('click', copyShareLink);
     $('sh-copy-big').addEventListener('click', copyShareLink);
     $('sh-more').addEventListener('click', shareMore);

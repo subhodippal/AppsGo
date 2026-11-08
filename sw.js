@@ -1,7 +1,7 @@
 // Service worker: caches AppsGo's own files so the library opens offline once installed.
 // Only runs when hosted (http/https), e.g. on GitHub Pages — browsers don't allow it on file://.
 // Files are fetched network-first, so edits show up on the next online visit; bump CACHE if you add/rename files.
-const CACHE = 'appsgo-v13';
+const CACHE = 'appsgo-v18';
 const FILES = [
   './',
   './index.html',
