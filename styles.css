@@ -142,6 +142,11 @@ input, select, textarea { font: inherit; color: inherit; }
   backdrop-filter: blur(4px);
 }
 .glass-btn:hover { background: rgb(255 255 255 / 0.25); }
+.install-btn { display: inline-flex; align-items: center; gap: 6px; height: 40px; border-radius: 999px; padding: 0 14px 0 12px; }
+.install-btn:active { transform: scale(0.96); }
+/* Inner pages: icon only, round like the theme button */
+.hero.compact .install-btn { width: 40px; padding: 0; justify-content: center; }
+.hero.compact .install-label { display: none; }
 .glass-btn.round { width: 40px; height: 40px; border-radius: 50%; padding: 0; font-size: 1.05rem; display: grid; place-items: center; }
 
 /* Back button + page title only show in the compact header used on inner pages. */
@@ -189,12 +194,6 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 
 /* ---------- Home ---------- */
-.promo {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
-  background: var(--promo-bg); color: var(--promo-text);
-  border-left: 4px solid var(--promo-border); border-radius: 10px; padding: 14px 16px;
-}
-.promo p { margin: 0; line-height: 1.5; }
 .gradient-divider { border: 0; height: 3px; border-radius: 3px; background: var(--divider); margin: 4px 0 0; width: 100%; }
 .section { display: flex; flex-direction: column; gap: 12px; }
 .section + .section { margin-top: 8px; }
@@ -431,7 +430,6 @@ mark { background: color-mix(in srgb, var(--primary) 22%, transparent); color: i
   .hero-title { font-size: 2rem; }
   .container { padding: 0 32px 32px; }
   .view, .search-wrap { max-width: 1000px; }
-  .promo { flex-direction: row; align-items: center; justify-content: space-between; }
   .app-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   .rail { margin: 0; padding: 4px 0 8px; grid-auto-columns: 96px; }
   .cat-pills { margin: -4px 0 0; padding: 0 0 4px; flex-wrap: wrap; }
@@ -479,3 +477,45 @@ mark { background: color-mix(in srgb, var(--primary) 22%, transparent); color: i
 .sh-cp { background: var(--primary-soft); }
 .sh-mo { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-weight: 800; }
 .sh-target-label { font-size: 0.75rem; font-weight: 700; }
+
+/* ---------- Player: an app running inside AppsGo ---------- */
+.app-icon.sm { --size: 32px; box-shadow: 0 0 0 1.5px rgb(255 255 255 / 0.6); }
+html.playing, html.playing body { overflow: hidden; }
+.player {
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none;
+  margin: 0; padding: 0; border: 0; background: var(--bg); color: var(--text);
+}
+.player[open] { display: flex; flex-direction: column; animation: player-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.player::backdrop { background: var(--bg); }
+@keyframes player-in { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .player[open] { animation: none; } }
+/* Top bar in the app's own colours */
+.pl-bar {
+  flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+  padding: calc(env(safe-area-inset-top) + 6px) 8px 6px; color: #fff;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgb(255 255 255 / 0.18), transparent 60%),
+    linear-gradient(135deg, var(--c1, #0f766e), var(--c2, #0891b2));
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.18);
+}
+.pl-btn {
+  width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; padding: 0; display: grid; place-items: center;
+  border: 1px solid rgb(255 255 255 / 0.3); background: rgb(255 255 255 / 0.16); color: #fff; backdrop-filter: blur(4px);
+}
+.pl-btn:hover { background: rgb(255 255 255 / 0.28); }
+.pl-btn:active { transform: scale(0.94); }
+.pl-titles { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.pl-name { font-size: 0.98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-host { font-size: 0.68rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl-stage { position: relative; flex: 1; min-height: 0; background: var(--surface); }
+.pl-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+.pl-loading {
+  position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: var(--bg); color: var(--muted); font-weight: 600; text-align: center; padding: 24px;
+}
+.pl-spinner {
+  width: 38px; height: 38px; border-radius: 50%; border: 4px solid var(--primary-soft); border-top-color: var(--primary);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.pl-slow { max-width: 280px; font-size: 0.85rem; font-weight: 500; line-height: 1.5; }

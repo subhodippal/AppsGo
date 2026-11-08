@@ -134,9 +134,93 @@
     store.set('recent', state.recent);
     store.set('opens', state.opens);
     if (!navigator.onLine) toast("📴 You're offline, so it may not open");
+    if (app.open === 'browser') openInBrowser(app);
+    else openPlayer(app.id); // inside AppsGo (iframe); "open": "browser" in apps.json skips this
+    render();
+  }
+
+  function openInBrowser(app) {
     const win = window.open(app.url, '_blank', 'noopener');
     if (!win) location.href = app.url; // pop-up blocked (some in-app browsers): open it here instead
-    render();
+  }
+
+  // ---------- player: runs an app inside AppsGo ----------
+
+  let playerApp = null;
+  let playerPushed = false; // we added #/play/<id> to history, so Back closes the player
+  let playerSlowTimer;
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const themeDefault = themeMeta.content;
+
+  function openPlayer(id, { push = true } = {}) {
+    const app = byId.get(id);
+    if (!app) return;
+    const player = $('player');
+    if (playerApp?.id === id && player.open) return;
+
+    // Opened from the details sheet: swap its #/app/<id> entry for #/play/<id>, so Back from the
+    // player goes to where the sheet was opened from, not back into the sheet.
+    if (push) {
+      if (location.hash.startsWith('#/app/')) {
+        history.replaceState(null, '', `#/play/${encodeURIComponent(id)}`);
+        playerPushed = sheetPushed;
+        sheetPushed = false;
+      } else if (!location.hash.startsWith('#/play/')) {
+        history.pushState(null, '', `#/play/${encodeURIComponent(id)}`);
+        playerPushed = true;
+      }
+    }
+    if ($('app-sheet').open) closeSheet($('app-sheet'));
+
+    playerApp = app;
+    $('pl-icon').innerHTML = iconHTML(app, 'sm');
+    $('pl-name').textContent = app.name;
+    $('pl-host').textContent = new URL(app.url).host;
+    $('player').style.setProperty('--c1', app.colors[0]);
+    $('player').style.setProperty('--c2', app.colors[1]);
+    themeMeta.content = app.colors[0];
+    loadFrame();
+    if (!player.open) player.showModal();
+    document.documentElement.classList.add('playing'); // no page scroll behind the player
+  }
+
+  function loadFrame() {
+    const old = $('pl-frame');
+    if (old) old.remove();
+    const frame = document.createElement('iframe');
+    frame.id = 'pl-frame';
+    frame.className = 'pl-frame';
+    frame.title = playerApp.name;
+    frame.allow = 'fullscreen; autoplay; clipboard-read; clipboard-write; web-share; gamepad; screen-wake-lock; accelerometer; gyroscope';
+    frame.allowFullscreen = true;
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    $('pl-loading').hidden = false;
+    $('pl-slow').hidden = true;
+    clearTimeout(playerSlowTimer);
+    playerSlowTimer = setTimeout(() => ($('pl-slow').hidden = false), 8000); // e.g. a site that refuses to be framed
+    frame.addEventListener('load', () => {
+      clearTimeout(playerSlowTimer);
+      $('pl-loading').hidden = true;
+    });
+    frame.src = playerApp.url;
+    $('pl-stage').append(frame);
+  }
+
+  /** Close the player and stop the app (its sounds, timers…). */
+  function closePlayer({ fromRoute = false } = {}) {
+    const player = $('player');
+    if (!player.open) return;
+    clearTimeout(playerSlowTimer);
+    $('pl-frame')?.remove();
+    player.close();
+    document.documentElement.classList.remove('playing');
+    themeMeta.content = themeDefault;
+    playerApp = null;
+    if (!fromRoute && location.hash.startsWith('#/play/')) {
+      if (playerPushed) history.back();
+      else history.replaceState(null, '', `#/${state.route === 'home' ? '' : state.route}`);
+    }
+    playerPushed = false;
   }
 
   // ---------- helpers ----------
@@ -276,11 +360,11 @@
     const favs = state.favs.map((id) => byId.get(id));
     $('home-favs').innerHTML = favs.length
       ? `<section class="section">
-          <div class="section-head"><h2 class="section-title"><span aria-hidden="true">⚡</span> Quick access</h2><a class="section-link" href="#/favorites">See all ›</a></div>
-          <p class="muted small section-sub">Your favourites. Tap to launch.</p>
+          <div class="section-head"><h2 class="section-title"><span aria-hidden="true">❤️</span> Favourites</h2><a class="section-link" href="#/favorites">See all ›</a></div>
+          <p class="muted small section-sub">Tap to open.</p>
           <div class="rail">${favs.map(tileHTML).join('')}</div>
         </section>`
-      : `<div class="card hint-card"><span aria-hidden="true">♡</span><span>Tap the heart on any app or game to keep it here for one-tap launch.</span></div>`;
+      : `<div class="card hint-card"><span aria-hidden="true">♡</span><span>Tap any app or game, then ♡ Favourite, to keep it here for one-tap opening.</span></div>`;
 
     const recent = state.recent.map((r) => byId.get(r.id));
     $('home-recent').innerHTML = recent.length
@@ -333,7 +417,7 @@
       $('list').innerHTML = emptyHTML('🔎', 'Nothing found', `No ${route === 'home' ? 'apps or games' : many} match “${esc(q)}”. Try another word.`,
         '<button class="btn btn-ghost btn-sm" type="button" data-act="clear-search">Clear search</button>');
     } else if (route === 'favorites') {
-      $('list').innerHTML = emptyHTML('♡', 'No favourites yet', 'Tap the heart on any app or game and it shows up here and in Quick access on Home.',
+      $('list').innerHTML = emptyHTML('♡', 'No favourites yet', 'Tap any app or game, then ♡ Favourite. It shows up here and at the top of Home.',
         '<a class="btn btn-gradient btn-sm" href="#/">Browse apps</a>');
     } else {
       $('list').innerHTML = emptyHTML('📭', `No ${many} yet`, 'Add them to apps.json.');
@@ -581,6 +665,7 @@
   // ---------- install ----------
 
   let installPrompt = null;
+  let installed = false; // installed during this visit
   const ua = navigator.userAgent;
   const isIOS = () => /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isAndroid = () => /Android/.test(ua);
@@ -588,7 +673,7 @@
   const isHosted = () => /^https?:$/.test(location.protocol);
 
   function renderInstall() {
-    $('promo').hidden = isStandalone() || store.get('installDismissed', false);
+    $('install-btn').hidden = isStandalone() || installed; // already running as the installed app
   }
 
   async function onInstallClick() {
@@ -596,7 +681,7 @@
       installPrompt.prompt();
       const { outcome } = await installPrompt.userChoice;
       installPrompt = null;
-      if (outcome === 'accepted') store.set('installDismissed', true);
+      if (outcome === 'accepted') installed = true;
       renderInstall();
       return;
     }
@@ -626,6 +711,14 @@
 
   function onRoute() {
     const [r, rawId] = location.hash.replace(/^#\/?/, '').split('/');
+    if (r === 'play') {
+      const id = decodeURIComponent(rawId || '');
+      if (!byId.has(id)) return void history.replaceState(null, '', '#/');
+      render();
+      openPlayer(id, { push: false });
+      return;
+    }
+    if ($('player').open) closePlayer({ fromRoute: true }); // Back button while an app is open
     if (r === 'app') {
       const id = decodeURIComponent(rawId || '');
       if (!byId.has(id)) return void history.replaceState(null, '', '#/');
@@ -705,7 +798,7 @@
     });
     window.addEventListener('appinstalled', () => {
       installPrompt = null;
-      store.set('installDismissed', true);
+      installed = true;
       renderInstall();
       toast('🎉 App installed');
     });
@@ -768,6 +861,20 @@
       sheetPushed = false;
     });
     $('as-open').addEventListener('click', () => sheetApp && launch(sheetApp.id));
+
+    // Player
+    $('player').addEventListener('cancel', (e) => {
+      e.preventDefault(); // Esc
+      closePlayer();
+    });
+    $('pl-close').addEventListener('click', () => closePlayer());
+    $('pl-reload').addEventListener('click', () => playerApp && loadFrame());
+    $('pl-browser').addEventListener('click', () => {
+      if (!playerApp) return;
+      const app = playerApp;
+      closePlayer();
+      openInBrowser(app);
+    });
     $('as-fav').addEventListener('click', () => {
       if (!sheetApp) return;
       toggleFav(sheetApp.id);

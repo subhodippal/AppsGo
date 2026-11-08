@@ -1,20 +1,6 @@
 {
   "apps": [
     {
-      "id": "myexpenses",
-      "name": "myExpenses",
-      "type": "app",
-      "category": "Finance",
-      "url": "https://subhodippal.github.io/myExpenses/",
-      "icon": "https://subhodippal.github.io/myExpenses/icons/apple-touch-icon.png",
-      "emoji": "💰",
-      "colors": ["#4f46e5", "#db2777"],
-      "description": "Track daily spending and income in lists, see month totals, and plan a budget. Works offline, syncs with Google sign-in, shares lists with friends, and exports to Excel, CSV or PDF.",
-      "tags": ["expense", "money", "budget", "tracker", "offline", "sync", "share"],
-      "repo": "https://github.com/subhodippal/myExpenses",
-      "updated": "2026-11-08"
-    },
-    {
       "id": "notesgo",
       "name": "NotesGo",
       "type": "app",
@@ -29,18 +15,18 @@
       "updated": "2026-11-08"
     },
     {
-      "id": "expensemanager",
-      "name": "Expense Manager",
+      "id": "myexpenses",
+      "name": "myExpenses",
       "type": "app",
       "category": "Finance",
-      "url": "https://subhodippal.github.io/ExpenseManager/",
-      "icon": "https://subhodippal.github.io/ExpenseManager/icons/apple-touch-icon.png",
-      "emoji": "📒",
-      "colors": ["#4f46e5", "#3b82f6"],
-      "description": "A one-page expense tracker you can install. Your data is encrypted in the browser before it is backed up, and expense books can be shared with friends.",
-      "tags": ["expense", "money", "encrypted", "share", "books"],
-      "repo": "https://github.com/subhodippal/ExpenseManager",
-      "updated": "2026-11-07"
+      "url": "https://subhodippal.github.io/myExpenses/",
+      "icon": "https://subhodippal.github.io/myExpenses/icons/apple-touch-icon.png",
+      "emoji": "💰",
+      "colors": ["#4f46e5", "#db2777"],
+      "description": "Track daily spending and income in lists, see month totals, and plan a budget. Works offline, syncs with Google sign-in, shares lists with friends, and exports to Excel, CSV or PDF.",
+      "tags": ["expense", "money", "budget", "tracker", "offline", "sync", "share"],
+      "repo": "https://github.com/subhodippal/myExpenses",
+      "updated": "2026-11-08"
     },
     {
       "id": "billsplit",
@@ -84,16 +70,16 @@
       "updated": "2026-08-30"
     },
     {
-      "id": "ludogo",
-      "name": "LudoGo",
+      "id": "tictactoe",
+      "name": "XO",
       "type": "game",
-      "category": "Board",
-      "url": "https://subhodippal.github.io/ludoGo/",
-      "emoji": "🎲",
-      "colors": ["#ef4444", "#f59e0b"],
-      "description": "Multiplayer Ludo, plus Snake & Ladder, to play with friends and family.",
-      "tags": ["ludo", "snake", "ladder", "dice", "multiplayer"],
-      "repo": "https://github.com/subhodippal/ludoGo",
+      "category": "Puzzle",
+      "url": "https://subhodippal.github.io/tic-tac-toe/",
+      "emoji": "⭕",
+      "colors": ["#3b82f6", "#ec4899"],
+      "description": "Multiplayer tic-tac-toe. Play a friend on another phone, or on the same screen.",
+      "tags": ["tic tac toe", "xo", "noughts", "crosses", "multiplayer"],
+      "repo": "https://github.com/subhodippal/tic-tac-toe",
       "updated": "2026-08-30"
     },
     {
@@ -110,31 +96,17 @@
       "updated": "2026-08-30"
     },
     {
-      "id": "tictactoe",
-      "name": "XO",
+      "id": "ludogo",
+      "name": "LudoGo",
       "type": "game",
-      "category": "Puzzle",
-      "url": "https://subhodippal.github.io/tic-tac-toe/",
-      "emoji": "⭕",
-      "colors": ["#3b82f6", "#ec4899"],
-      "description": "Multiplayer tic-tac-toe. Play a friend on another phone, or on the same screen.",
-      "tags": ["tic tac toe", "xo", "noughts", "crosses", "multiplayer"],
-      "repo": "https://github.com/subhodippal/tic-tac-toe",
+      "category": "Board",
+      "url": "https://subhodippal.github.io/ludoGo/",
+      "emoji": "🎲",
+      "colors": ["#ef4444", "#f59e0b"],
+      "description": "Multiplayer Ludo, plus Snake & Ladder, to play with friends and family.",
+      "tags": ["ludo", "snake", "ladder", "dice", "multiplayer"],
+      "repo": "https://github.com/subhodippal/ludoGo",
       "updated": "2026-08-30"
-    },
-    {
-      "id": "tictactoe-classic",
-      "name": "Tic Tac Toe Classic",
-      "type": "game",
-      "category": "Puzzle",
-      "url": "https://tictatcoe.vercel.app",
-      "emoji": "❌",
-      "colors": ["#6366f1", "#a855f7"],
-      "description": "The classic tic-tac-toe for two players on one screen.",
-      "tags": ["tic tac toe", "xo", "classic", "two player"],
-      "repo": "https://github.com/subhodippal/tictatcoe-live",
-      "host": "Vercel",
-      "updated": "2023-01-24"
     },
     {
       "id": "streetracingzombie",
@@ -149,6 +121,20 @@
       "tags": ["racing", "car", "zombie", "arcade"],
       "repo": "https://github.com/subhodippal/streetRacingZombie",
       "updated": "2026-08-22"
+    },
+    {
+      "id": "snakegame",
+      "name": "Snake",
+      "type": "game",
+      "category": "Arcade",
+      "url": "https://subhodippal.github.io/snake_game/",
+      "icon": "https://subhodippal.github.io/snake_game/game_assests/images/favicon.png",
+      "emoji": "🐍",
+      "colors": ["#15803d", "#84cc16"],
+      "description": "The classic snake game, like on old Nokia phones. Eat the food, grow longer and don’t bite your own tail.",
+      "tags": ["snake", "nokia", "classic", "retro", "arcade"],
+      "repo": "https://github.com/subhodippal/snake_game",
+      "updated": "2022-01-02"
     }
   ]
 }

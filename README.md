@@ -8,8 +8,8 @@ Live: `https://subhodippal.github.io/AppsGo/`
 
 - **Browse** apps and games. Home shows a few of each; the **Apps** and **Games** tabs list them all, with category filters and sorting (A–Z, Most used, Newest).
 - **Search** by name, category, description or tag, from the box at the top of every page. On Home it searches everything; on a tab it searches within that tab. Matches are highlighted. Press `/` to jump to the search box on a computer.
-- **Favourite** anything with ♡. Favourites appear under **⚡ Quick access** on Home (tap an icon to launch it) and on the **Favourites** tab, with a count on the tab.
-- **Open** an app with the **Open** button. It opens in a new tab, and AppsGo remembers it under **🕘 Recently used** with how many times you've opened it.
+- **Favourite** anything: tap it, then **♡ Favourite**. Favourites appear under **❤️ Favourites** at the top of Home (tap an icon to open it) and on the **Favourites** tab, with a count on the tab.
+- **Open** an app with the **Open** button. It runs inside AppsGo, full screen, under a slim bar with ✕ (close it and pick another), ↻ (reload) and ↗ (open it in the browser instead). Back closes it too. AppsGo remembers it under **🕘 Recently used**. Google sign-in can't run inside AppsGo, so sign in to an app once in the browser (↗); because all the apps are on `subhodippal.github.io`, that sign-in is then used inside AppsGo too.
 - **Details**: tap a card for a bottom sheet with the description, tags (tap one to search for it), host, last update, your usage, Favourite, Share, Open and *View source on GitHub*. Each app has its own link, `#/app/<id>`, and the phone's Back button closes the sheet.
 - **Install** AppsGo to your home screen. The library itself opens offline; the apps still need a connection the first time.
 
@@ -57,6 +57,7 @@ A full entry:
 | `repo` | none | Adds *View source on GitHub* |
 | `updated` | none | `YYYY-MM-DD`, for **Newest** |
 | `host` | detected from the URL | |
+| `open` | in AppsGo | `"browser"` opens it in a new browser tab instead of inside AppsGo |
 | `hidden` | `false` | `true` keeps the entry in the file but doesn't show it |
 
 Remember the commas between entries. If the file has a JSON mistake, AppsGo shows "Couldn't load the apps"; paste it into a JSON checker to find the line. Once you push, the change shows up on the next visit; installed copies fetch the file fresh whenever they're online.
