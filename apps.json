@@ -57,6 +57,20 @@
       "updated": "2025-08-08"
     },
     {
+      "id": "buddyrace",
+      "name": "Buddy Race",
+      "type": "game",
+      "category": "Racing",
+      "url": "https://subhodippal.github.io/buddyRace/",
+      "icon": "https://subhodippal.github.io/buddyRace/icons/apple-touch-icon.png",
+      "emoji": "🏃",
+      "colors": ["#f7b733", "#f97316"],
+      "description": "A funny 3D running and fighting race of four hostel friends through campus, Kolkata streets, markets, villages and over the river. Single player or multiplayer.",
+      "tags": ["racing", "running", "fighting", "kolkata", "friends", "multiplayer", "3d"],
+      "repo": "https://github.com/subhodippal/buddyRace",
+      "updated": "2026-11-14"
+    },
+    {
       "id": "deadmileracer",
       "name": "Dead Mile Racer",
       "type": "game",
@@ -138,58 +152,6 @@
       "tags": ["ludo", "dice", "board", "multiplayer", "online", "3d"],
       "repo": "https://github.com/subhodippal/ludo3D",
       "updated": "2026-11-10"
-    },
-    {
-      "id": "chessgo",
-      "name": "ChessGo",
-      "type": "game",
-      "category": "Board",
-      "url": "https://subhodippal.github.io/ChessGo/",
-      "emoji": "♟️",
-      "colors": ["#334155", "#7c3aed"],
-      "description": "Chess for one player against the computer, or for two players.",
-      "tags": ["chess", "multiplayer", "single player", "strategy"],
-      "repo": "https://github.com/subhodippal/ChessGo",
-      "updated": "2026-08-30"
-    },
-    {
-      "id": "tictactoe",
-      "name": "XO",
-      "type": "game",
-      "category": "Puzzle",
-      "url": "https://subhodippal.github.io/tic-tac-toe/",
-      "emoji": "⭕",
-      "colors": ["#3b82f6", "#ec4899"],
-      "description": "Multiplayer tic-tac-toe. Play a friend on another phone, or on the same screen.",
-      "tags": ["tic tac toe", "xo", "noughts", "crosses", "multiplayer"],
-      "repo": "https://github.com/subhodippal/tic-tac-toe",
-      "updated": "2026-08-30"
-    },
-    {
-      "id": "carromgo",
-      "name": "CarromGo",
-      "type": "game",
-      "category": "Board",
-      "url": "https://subhodippal.github.io/carromGo/",
-      "emoji": "🎯",
-      "colors": ["#b45309", "#f59e0b"],
-      "description": "Multiplayer carrom: aim the striker and pocket your coins before your opponent does.",
-      "tags": ["carrom", "multiplayer", "board"],
-      "repo": "https://github.com/subhodippal/carromGo",
-      "updated": "2026-08-30"
-    },
-    {
-      "id": "ludogo",
-      "name": "LudoGo",
-      "type": "game",
-      "category": "Board",
-      "url": "https://subhodippal.github.io/ludoGo/",
-      "emoji": "🎲",
-      "colors": ["#ef4444", "#f59e0b"],
-      "description": "Multiplayer Ludo, plus Snake & Ladder, to play with friends and family.",
-      "tags": ["ludo", "snake", "ladder", "dice", "multiplayer"],
-      "repo": "https://github.com/subhodippal/ludoGo",
-      "updated": "2026-08-30"
     },
     {
       "id": "streetracingzombie",

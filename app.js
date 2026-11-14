@@ -142,7 +142,7 @@
   }
 
   /**
-   * Open the app outside AppsGo. `ownWindow` (the player's maximize button) asks for a separate window
+   * Open the app outside AppsGo. `ownWindow` (the player's open-in-new-window button) asks for a separate window
    * on computers; phones open a new tab either way.
    * (No 'noopener' in the features: with it window.open() always returns null, so a blocked pop-up
    * can't be told apart. The opener link is cut by hand instead.)
@@ -160,8 +160,8 @@
   //
   // EXPERIMENTAL multitasking: ⌄ minimizes an app and keeps it running; the "Running" dock above the
   // tabs (and ⧉ in the player bar) switch between running apps; ✕ closes one.
-  // Set MULTITASK = false to go back to one app at a time, closed when you leave it.
-  const MULTITASK = true;
+  // Turned on/off in ⚙️ Settings ("Minimize apps"); when off, one app at a time, closed when you leave it.
+  let MULTITASK = store.get('multitask', false); // off unless turned on
   const MAX_RUNNING = 4; // opening a 5th asks which running app to close (ensureRoom)
 
   const sessions = new Map(); // id → { app, frame, loaded, slow, slowTimer, at }
@@ -375,6 +375,18 @@
       .join('');
     $('sw-note').textContent = `${sessions.size} of ${MAX_RUNNING} running · up to ${MAX_RUNNING} apps can run at the same time`;
     openSheet($('switch-sheet'));
+  }
+
+  /** ⚙️ Settings → Minimize apps. Turning it off closes the apps that were left running. */
+  function setMultitask(on) {
+    MULTITASK = on;
+    store.set('multitask', on);
+    if (!on && sessions.size) {
+      for (const id of [...sessions.keys()]) if (id !== activeId) endSession(id);
+      toast('Closed the minimized apps');
+    }
+    if (activeId) showSession(activeId);
+    renderDock();
   }
 
   // ---------- helpers ----------
@@ -791,22 +803,23 @@
 
   // ---------- theme ----------
 
-  const systemTheme = () => (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  const currentTheme = () => document.documentElement.dataset.theme || systemTheme();
+  // 'system' (default: follows the device), 'light' or 'dark'. Picked in ⚙️ Settings.
+  const themePick = () => document.documentElement.dataset.theme || 'system';
 
-  function renderThemeButton() {
-    const dark = currentTheme() === 'dark';
-    $('theme-btn').textContent = dark ? '☀️' : '🌙';
-    $('theme-btn').title = dark ? 'Switch to light theme' : 'Switch to dark theme';
+  function renderThemeChoice() {
+    const pick = themePick();
+    for (const b of document.querySelectorAll('[data-theme-pick]')) b.setAttribute('aria-checked', String(b.dataset.themePick === pick));
   }
 
-  function toggleTheme() {
-    const next = currentTheme() === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
+  function setTheme(pick) {
+    const root = document.documentElement;
+    if (pick === 'system') delete root.dataset.theme;
+    else root.dataset.theme = pick;
     try {
-      localStorage.setItem(THEME_KEY, next);
+      if (pick === 'system') localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, pick);
     } catch {}
-    renderThemeButton();
+    renderThemeChoice();
   }
 
   // ---------- online status ----------
@@ -948,12 +961,33 @@
 
   function start() {
     for (const el of document.querySelectorAll('.max-running')) el.textContent = MAX_RUNNING;
-    renderThemeButton();
+    renderThemeChoice();
     renderStatus();
     renderInstall();
 
-    $('theme-btn').addEventListener('click', toggleTheme);
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderThemeButton);
+
+    // Settings sidebar
+    const settings = $('settings');
+    $('settings-btn').addEventListener('click', () => {
+      $('set-multitask').checked = MULTITASK;
+      openSheet(settings);
+    });
+    settings.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      closeSheet(settings);
+    });
+    settings.addEventListener('click', (e) => {
+      if (e.target === settings) {
+        const r = settings.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeSheet(settings);
+      }
+    });
+    settings.querySelector('[data-close]').addEventListener('click', () => closeSheet(settings));
+    $('theme-choice').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-theme-pick]');
+      if (b) setTheme(b.dataset.themePick);
+    });
+    $('set-multitask').addEventListener('change', (e) => setMultitask(e.target.checked));
     $('install-btn').addEventListener('click', onInstallClick);
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault(); // show our own "Install app" button instead of the browser's mini-bar
