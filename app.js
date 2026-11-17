@@ -180,18 +180,11 @@
       // Switching apps inside the player: same history entry, new id.
       history.replaceState(null, '', `#/play/${encodeURIComponent(id)}`);
     } else if (push) {
-      // From the details sheet: swap its #/app/<id> entry for #/play/<id>, so Back from the
-      // player goes to where the sheet was opened from, not back into the sheet.
-      if (location.hash.startsWith('#/app/')) {
-        history.replaceState(null, '', `#/play/${encodeURIComponent(id)}`);
-        playerPushed = sheetPushed;
-        sheetPushed = false;
-      } else if (!location.hash.startsWith('#/play/')) {
+      if (!location.hash.startsWith('#/play/')) {
         history.pushState(null, '', `#/play/${encodeURIComponent(id)}`);
         playerPushed = true;
       }
     }
-    if ($('app-sheet').open) closeSheet($('app-sheet'));
     if ($('switch-sheet').open) closeSheet($('switch-sheet'));
 
     if (!MULTITASK) for (const other of [...sessions.keys()]) if (other !== id) endSession(other);
@@ -453,19 +446,27 @@
     return `<span class="app-icon ${size}" style="--c1:${esc(c1)};--c2:${esc(c2)}" aria-hidden="true"><span class="app-emoji">${esc(app.emoji)}</span>${img}</span>`;
   }
 
+  const SHARE_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>';
+
+  /** A card wearing the app's cover. Tap it to open the app; ♡ and Share sit on top. */
   function rowHTML(app, q = '') {
+    const [c1, c2] = app.colors;
+    const fav = isFav(app.id);
+    const id = esc(app.id);
     return `
-      <article class="app-row card">
-        <button class="app-row-main" type="button" data-act="details" data-id="${esc(app.id)}" aria-label="${esc(app.name)} details">
-          ${iconHTML(app)}
+      <article class="app-row" style="--c1:${esc(c1)};--c2:${esc(c2)}">
+        <span class="app-row-mark" aria-hidden="true">${esc(app.emoji)}</span>
+        <button class="app-row-main" type="button" data-act="open" data-id="${id}" aria-label="Open ${esc(app.name)}">
+          ${iconHTML(app, 'xl')}
           <span class="app-text">
             <span class="app-name">${highlight(app.name, q)}</span>
-            <span class="app-meta"><span class="badge ${app.type === 'game' ? 'badge-game' : ''}">${typeLabel(app)}</span>${esc(app.category)}</span>
+            <span class="app-meta"><span class="badge">${typeLabel(app)}</span>${esc(app.category)}</span>
             ${app.description ? `<span class="app-desc">${highlight(app.description, q)}</span>` : ''}
           </span>
         </button>
-        <div class="app-row-side">
-          <button class="open-btn" type="button" data-act="open" data-id="${esc(app.id)}" aria-label="Open ${esc(app.name)}">Open</button>
+        <div class="app-row-actions">
+          <button class="card-btn heart ${fav ? 'is-on' : ''}" type="button" data-act="fav" data-id="${id}" aria-pressed="${fav}" aria-label="${fav ? 'Remove from favourites' : 'Add to favourites'}" title="${fav ? 'Unfavourite' : 'Favourite'}">${fav ? '♥' : '♡'}</button>
+          <button class="card-btn" type="button" data-act="share" data-id="${id}" aria-label="Share ${esc(app.name)}" title="Share">${SHARE_SVG}</button>
         </div>
       </article>`;
   }
@@ -530,7 +531,7 @@
           <p class="muted small section-sub">Tap to open.</p>
           <div class="rail">${favs.map(tileHTML).join('')}</div>
         </section>`
-      : `<div class="card hint-card"><span aria-hidden="true">♡</span><span>Tap any app or game, then ♡ Favourite, to keep it here for one-tap opening.</span></div>`;
+      : `<div class="card hint-card"><span aria-hidden="true">♡</span><span>Tap ♡ on any app or game card to keep it here for one-tap opening.</span></div>`;
 
     const recent = state.recent.map((r) => byId.get(r.id));
     $('home-recent').innerHTML = recent.length
@@ -583,55 +584,16 @@
       $('list').innerHTML = emptyHTML('🔎', 'Nothing found', `No ${route === 'home' ? 'apps or games' : many} match “${esc(q)}”. Try another word.`,
         '<button class="btn btn-ghost btn-sm" type="button" data-act="clear-search">Clear search</button>');
     } else if (route === 'favorites') {
-      $('list').innerHTML = emptyHTML('♡', 'No favourites yet', 'Tap any app or game, then ♡ Favourite. It shows up here and at the top of Home.',
+      $('list').innerHTML = emptyHTML('♡', 'No favourites yet', 'Tap ♡ on any app or game card. It shows up here and at the top of Home.',
         '<a class="btn btn-gradient btn-sm" href="#/">Browse apps</a>');
     } else {
       $('list').innerHTML = emptyHTML('📭', `No ${many} yet`, 'Add them to apps.json.');
     }
   }
 
-  // ---------- details sheet ----------
-
-  let sheetApp = null;
-  let sheetPushed = false; // we added #/app/<id> to history, so Back closes the sheet
-
-  function openDetails(id, { push = true } = {}) {
-    const app = byId.get(id);
-    if (!app) return;
-    sheetApp = app;
-    fillDetails();
-    if (push && !location.hash.startsWith('#/app/')) {
-      history.pushState({ sheet: id }, '', `#/app/${encodeURIComponent(id)}`);
-      sheetPushed = true;
-    }
-    openSheet($('app-sheet'));
-  }
-
-  function fillDetails() {
-    const app = sheetApp;
-    const fav = isFav(app.id);
-    const [c1, c2] = app.colors;
-    $('as-banner').style.setProperty('--c1', c1);
-    $('as-banner').style.setProperty('--c2', c2);
-    $('as-mark').textContent = app.emoji;
-    $('as-icon').innerHTML = iconHTML(app, 'xl');
-    $('as-name').textContent = app.name;
-    const updated = app.updated && monthYear(app.updated);
-    $('as-meta').innerHTML =
-      `<span class="badge ${app.type === 'game' ? 'badge-game' : ''}">${typeLabel(app)}</span>` +
-      `<span class="as-chip">${esc(app.category)}</span>` +
-      (updated ? `<span class="as-chip">Updated ${esc(updated)}</span>` : '');
-    $('as-desc').textContent = app.description || '';
-    $('as-desc').hidden = !app.description;
-    $('as-fav-icon').textContent = fav ? '♥' : '♡';
-    $('as-fav').classList.toggle('is-fav', fav);
-    $('as-fav').setAttribute('aria-pressed', fav);
-    $('as-fav').setAttribute('aria-label', fav ? 'Remove from favourites' : 'Add to favourites');
-  }
-
   // ---------- share ----------
 
-  /** The AppsGo link that opens this app's details, e.g. https://…/AppsGo/#/app/carromgo */
+  /** The AppsGo link that opens this app, e.g. https://…/AppsGo/#/app/carromgo */
   const shareLink = (app) => `${location.origin}${location.pathname}#/app/${encodeURIComponent(app.id)}`;
   const shareText = (app) => `${app.type === 'game' ? '🎮' : '📱'} ${app.name}${app.description ? ` – ${app.description}` : ''}`;
 
@@ -898,12 +860,13 @@
     if (r === 'app') {
       const id = decodeURIComponent(rawId || '');
       if (!byId.has(id)) return void history.replaceState(null, '', '#/');
-      render(); // keep whatever page is under the sheet
-      if (!$('app-sheet').open || sheetApp?.id !== id) openDetails(id, { push: false });
+      // Shared link (#/app/<id>): open the app straight away.
+      history.replaceState(null, '', '#/');
+      state.route = 'home';
+      render();
+      launch(id);
       return;
     }
-    if ($('app-sheet').open) closeSheet($('app-sheet')); // Back button while the sheet is open
-    sheetPushed = false;
     const route = ROUTES[r] ? r : 'home';
     if (route !== state.route) {
       state.route = route;
@@ -920,7 +883,6 @@
     if (!el) return;
     const { act, id } = el.dataset;
     if (act === 'open') launch(id);
-    else if (act === 'details') openDetails(id);
     else if (act === 'fav') {
       toggleFav(id);
       render();
@@ -1040,9 +1002,6 @@
       });
     }
 
-    // Details sheet
-    const sheet = $('app-sheet');
-    wireSheet(sheet);
     wireSheet($('confirm-sheet'));
     wireSheet($('install-dialog'));
     wireSheet($('share-sheet'));
@@ -1051,15 +1010,6 @@
     $('sh-copy-big').addEventListener('click', copyShareLink);
     $('sh-more').addEventListener('click', shareMore);
     $('sh-url').addEventListener('focus', (e) => e.target.select());
-    sheet.addEventListener('close', () => {
-      // Closed by a button / swipe / Esc: take #/app/<id> off the address bar too.
-      if (location.hash.startsWith('#/app/')) {
-        if (sheetPushed) history.back();
-        else history.replaceState(null, '', `#/${state.route === 'home' ? '' : state.route}`);
-      }
-      sheetPushed = false;
-    });
-    $('as-open').addEventListener('click', () => sheetApp && launch(sheetApp.id));
 
     // Player
     $('player').addEventListener('cancel', (e) => {
@@ -1104,24 +1054,11 @@
       renderDock();
       toast('Closed all apps');
     });
-    $('as-fav').addEventListener('click', () => {
-      if (!sheetApp) return;
-      toggleFav(sheetApp.id);
-      fillDetails();
-      render();
-      $('as-fav-icon').classList.remove('pop');
-      void $('as-fav-icon').offsetWidth; // restart the animation
-      $('as-fav-icon').classList.add('pop');
-    });
-    $('as-share').addEventListener('click', () => sheetApp && shareApp(sheetApp));
 
     addEventListener('hashchange', onRoute);
     // Coming back from a launched app (or another tab): refresh "Recently used" / "opened … ago".
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        render();
-        if (sheet.open && sheetApp) fillDetails();
-      }
+      if (document.visibilityState === 'visible') render();
     });
     loadCatalog().then(onRoute);
 

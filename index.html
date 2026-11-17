@@ -126,35 +126,6 @@
       </label>
     </dialog>
 
-    <!-- Details of one app (tap a card). Also opened by a link: #/app/<id> -->
-    <dialog id="app-sheet" class="dialog sheet app-sheet" aria-labelledby="as-name">
-      <!-- Banner in the app's own colours, with its emoji as a faint watermark. -->
-      <div id="as-banner" class="as-banner">
-        <div class="sheet-handle" aria-hidden="true"></div>
-        <span id="as-mark" class="as-mark" aria-hidden="true"></span>
-      </div>
-      <div class="as-head">
-        <span id="as-icon"></span>
-        <h3 id="as-name" class="as-name"></h3>
-        <div id="as-meta" class="as-meta"></div>
-      </div>
-      <p id="as-desc" class="as-desc"></p>
-      <div class="as-actions">
-        <button class="as-btn" type="button" data-close="cancel" aria-label="Close">
-          <span class="as-btn-icon" aria-hidden="true">✕</span><span class="as-btn-label">Close</span>
-        </button>
-        <button id="as-fav" class="as-btn" type="button" aria-pressed="false">
-          <span id="as-fav-icon" class="as-btn-icon" aria-hidden="true">♡</span><span class="as-btn-label">Favourite</span>
-        </button>
-        <button id="as-share" class="as-btn" type="button">
-          <span class="as-btn-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-          </span><span class="as-btn-label">Share</span>
-        </button>
-        <button id="as-open" class="btn btn-gradient as-open" type="button">Open ↗</button>
-      </div>
-    </dialog>
-
     <!-- Player: runs an app inside AppsGo, full screen. Link: #/play/<id>. Back / ✕ closes it. -->
     <dialog id="player" class="player" aria-labelledby="pl-name">
       <div class="pl-bar">

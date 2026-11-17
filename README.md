@@ -10,7 +10,7 @@ Live: `https://subhodippal.github.io/AppsGo/`
 - **Search** by name, category, description or tag, from the box at the top of every page. On Home it searches everything; on a tab it searches within that tab. Matches are highlighted. Press `/` to jump to the search box on a computer.
 - **Favourite** anything: tap it, then **♡ Favourite**. Favourites appear under **❤️ Favourites** at the top of Home (tap an icon to open it) and on the **Favourites** tab, with a count on the tab.
 - **Open** an app with the **Open** button. It runs inside AppsGo, full screen, under a slim bar with ↻ (reload), ↗ (open it in a new window instead) and ✕ (close it). By default one app runs at a time and closes when you leave it. *Experimental:* turn on **Minimize apps** in **⚙️ Settings** (header) to keep apps running: ⌄ minimizes, ⧉ switches between running apps, up to 4 can run (opening a 5th asks which one to close), and minimized apps wait in the **Running** dock above the tabs. AppsGo remembers it under **🕘 Recently used**. Google sign-in can't run inside AppsGo, so sign in to an app once in the browser (↗); because all the apps are on `subhodippal.github.io`, that sign-in is then used inside AppsGo too.
-- **Details**: tap a card for a bottom sheet with the description, tags (tap one to search for it), host, last update, your usage, Favourite, Share, Open and *View source on GitHub*. Each app has its own link, `#/app/<id>`, and the phone's Back button closes the sheet.
+- **Cards**: each card wears the app's own colours. Tap it to open the app; ♡ favourites it and the share button shares it. Each app has its own link, `#/app/<id>`, which opens the app straight away.
 - **Install** AppsGo to your home screen. The library itself opens offline; the apps still need a connection the first time.
 
 Favourites, history, sort order and settings (theme: System, Light or Dark; Minimize apps) are saved in the browser on this device (localStorage). There's no sign-in.
@@ -53,7 +53,7 @@ A full entry:
 | `category` | `App` / `Game` | Used by the category filter |
 | `icon` | none | Image URL; if it fails to load, the emoji tile shows |
 | `emoji`, `colors` | 📱 / 🎮, teal | The tile shown without an icon |
-| `description`, `tags` | empty | Shown in details; tags are extra search words |
+| `description`, `tags` | empty | Shown on the card; tags are extra search words |
 | `repo` | none | Adds *View source on GitHub* |
 | `updated` | none | `YYYY-MM-DD`, for **Newest** |
 | `host` | detected from the URL | |
