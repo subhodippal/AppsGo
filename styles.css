@@ -272,7 +272,6 @@ input, select, textarea { font: inherit; color: inherit; }
     inset 0 1px 0 rgb(255 255 255 / 0.3);
 }
 .app-row:hover::before { transform: translateX(60%); }
-.app-row:active { transform: scale(0.98); }
 /* the app's emoji, big and faint, tilted in the corner */
 .app-row-mark {
   position: absolute; z-index: -1; right: -14px; bottom: -40px; font-size: 150px; line-height: 1;
@@ -280,18 +279,23 @@ input, select, textarea { font: inherit; color: inherit; }
 }
 .app-row:hover .app-row-mark { transform: rotate(-2deg) scale(1.1); }
 
-/* The whole card is the Open button. */
+/* Only the icon opens the app; the rest of the card is just for show. */
 .app-row-main {
   width: 100%; min-height: 150px; display: flex; align-items: center; gap: 16px;
   border: 0; background: none; padding: 20px 76px 20px 18px; text-align: left; color: inherit; border-radius: inherit;
 }
-.app-row-main:focus-visible { outline: 3px solid #fff; outline-offset: -5px; }
+.app-row-open {
+  flex-shrink: 0; border: 0; background: none; padding: 0; border-radius: 26px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.app-row-open:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.app-row-open:hover .app-icon { transform: rotate(-6deg) scale(1.08); box-shadow: 0 0 0 4px rgb(255 255 255 / 0.7), 0 14px 28px rgb(0 0 0 / 0.35); }
+.app-row-open:active .app-icon { transform: scale(0.92); }
 .app-row .app-icon {
   --size: 84px; border-radius: 24px;
   box-shadow: 0 0 0 3px rgb(255 255 255 / 0.45), 0 10px 22px rgb(0 0 0 / 0.3);
   transition: transform 0.25s ease;
 }
-.app-row:hover .app-icon { transform: rotate(-6deg) scale(1.05); }
 .app-text { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .app-name { font-weight: 800; font-size: 1.2rem; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .app-meta { color: rgb(255 255 255 / 0.9); font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -321,7 +325,7 @@ input, select, textarea { font: inherit; color: inherit; }
 .card-btn.heart.is-on { background: #fff; color: var(--heart); border-color: #fff; text-shadow: none; }
 @media (prefers-reduced-motion: reduce) {
   .app-row, .app-row::before, .app-row-mark, .app-row .app-icon { transition: none; }
-  .app-row:hover, .app-row:hover .app-icon { transform: none; }
+  .app-row:hover, .app-row-open:hover .app-icon { transform: none; }
 }
 .heart.pop { animation: heart-pop 0.3s ease; }
 @keyframes heart-pop { 50% { transform: scale(1.35); } }

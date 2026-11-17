@@ -113,6 +113,8 @@
     cat: '', // category filter on Apps / Games (not saved)
     query: '',
     route: 'home',
+    showFavs: store.get('showFavs', true), // ⚙️ Settings → Show favourite apps (on Home)
+    showRecent: store.get('showRecent', true), // ⚙️ Settings → Show recently used apps (on Home)
   };
 
   const isFav = (id) => state.favs.includes(id);
@@ -448,7 +450,7 @@
 
   const SHARE_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>';
 
-  /** A card wearing the app's cover. Tap it to open the app; ♡ and Share sit on top. */
+  /** A card wearing the app's cover. Tap its icon to open the app; ♡ and Share sit on top. */
   function rowHTML(app, q = '') {
     const [c1, c2] = app.colors;
     const fav = isFav(app.id);
@@ -456,14 +458,14 @@
     return `
       <article class="app-row" style="--c1:${esc(c1)};--c2:${esc(c2)}">
         <span class="app-row-mark" aria-hidden="true">${esc(app.emoji)}</span>
-        <button class="app-row-main" type="button" data-act="open" data-id="${id}" aria-label="Open ${esc(app.name)}">
-          ${iconHTML(app, 'xl')}
+        <div class="app-row-main">
+          <button class="app-row-open" type="button" data-act="open" data-id="${id}" aria-label="Open ${esc(app.name)}" title="Open ${esc(app.name)}">${iconHTML(app, 'xl')}</button>
           <span class="app-text">
             <span class="app-name">${highlight(app.name, q)}</span>
             <span class="app-meta"><span class="badge">${typeLabel(app)}</span>${esc(app.category)}</span>
             ${app.description ? `<span class="app-desc">${highlight(app.description, q)}</span>` : ''}
           </span>
-        </button>
+        </div>
         <div class="app-row-actions">
           <button class="card-btn heart ${fav ? 'is-on' : ''}" type="button" data-act="fav" data-id="${id}" aria-pressed="${fav}" aria-label="${fav ? 'Remove from favourites' : 'Add to favourites'}" title="${fav ? 'Unfavourite' : 'Favourite'}">${fav ? '♥' : '♡'}</button>
           <button class="card-btn" type="button" data-act="share" data-id="${id}" aria-label="Share ${esc(app.name)}" title="Share">${SHARE_SVG}</button>
@@ -525,7 +527,7 @@
 
   function renderHome() {
     const favs = state.favs.map((id) => byId.get(id));
-    $('home-favs').innerHTML = favs.length
+    $('home-favs').innerHTML = !state.showFavs ? '' : favs.length
       ? `<section class="section">
           <div class="section-head"><h2 class="section-title"><span aria-hidden="true">❤️</span> Favourites</h2><a class="section-link" href="#/favorites">See all ›</a></div>
           <p class="muted small section-sub">Tap to open.</p>
@@ -534,7 +536,7 @@
       : `<div class="card hint-card"><span aria-hidden="true">♡</span><span>Tap ♡ on any app or game card to keep it here for one-tap opening.</span></div>`;
 
     const recent = state.recent.map((r) => byId.get(r.id));
-    $('home-recent').innerHTML = recent.length
+    $('home-recent').innerHTML = state.showRecent && recent.length
       ? `<section class="section">
           <div class="section-head"><h2 class="section-title"><span aria-hidden="true">🕘</span> Recently used</h2><button class="section-link" type="button" data-act="clear-recent">Clear</button></div>
           <div class="rail">${recent.map(tileHTML).join('')}</div>
@@ -932,6 +934,8 @@
     const settings = $('settings');
     $('settings-btn').addEventListener('click', () => {
       $('set-multitask').checked = MULTITASK;
+      $('set-show-favs').checked = state.showFavs;
+      $('set-show-recent').checked = state.showRecent;
       openSheet(settings);
     });
     settings.addEventListener('cancel', (e) => {
@@ -950,6 +954,13 @@
       if (b) setTheme(b.dataset.themePick);
     });
     $('set-multitask').addEventListener('change', (e) => setMultitask(e.target.checked));
+    for (const [el, key] of [['set-show-favs', 'showFavs'], ['set-show-recent', 'showRecent']]) {
+      $(el).addEventListener('change', (e) => {
+        state[key] = e.target.checked;
+        store.set(key, state[key]);
+        render();
+      });
+    }
     $('install-btn').addEventListener('click', onInstallClick);
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault(); // show our own "Install app" button instead of the browser's mini-bar
