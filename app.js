@@ -139,7 +139,10 @@
     store.set('opens', state.opens);
     if (!navigator.onLine) toast("📴 You're offline, so it may not open");
     if (app.open === 'browser') openInBrowser(app);
-    else openPlayer(app.id); // inside AppsGo (iframe); "open": "browser" in apps.json skips this
+    else {
+      openPlayer(app.id); // inside AppsGo (iframe); "open": "browser" in apps.json skips this
+      toast('Open app in extended mode for better experience or if facing login issue', 4500, EXTEND_SVG);
+    }
     render();
   }
 
@@ -757,12 +760,19 @@
   }
 
   let toastTimer;
-  function toast(msg) {
+  // the same ↗ "open in a new window" icon as in the player bar
+  const EXTEND_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" /></svg>';
+
+  function toast(msg, ms = 2200, iconHTML = '') {
     const el = $('toast');
     el.textContent = msg;
+    el.classList.toggle('with-icon', !!iconHTML);
+    if (iconHTML) el.insertAdjacentHTML('afterbegin', `<span class="toast-icon">${iconHTML}</span>`);
     el.hidden = false;
+    // top layer, so it also shows above the app player (a modal dialog)
+    try { if (el.matches(':popover-open')) el.hidePopover(); el.showPopover(); } catch {}
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (el.hidden = true), 2200);
+    toastTimer = setTimeout(() => { el.hidden = true; try { el.hidePopover(); } catch {} }, ms);
   }
 
   // ---------- theme ----------
@@ -882,7 +892,12 @@
 
   function onAction(e) {
     const el = e.target.closest('[data-act]');
-    if (!el) return;
+    if (!el) {
+      // a tap anywhere on an app card opens the app (♡ and Share have their own data-act)
+      const card = e.target.closest('.app-row');
+      if (card && !e.target.closest('a, button, input')) card.querySelector('[data-act="open"]')?.click();
+      return;
+    }
     const { act, id } = el.dataset;
     if (act === 'open') launch(id);
     else if (act === 'fav') {
